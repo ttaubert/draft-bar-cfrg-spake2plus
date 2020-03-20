@@ -1,0 +1,1761 @@
+<!DOCTYPE html>
+<html lang="en" class="Internet-Draft">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>SPAKE2+, an Augmented PAKE</title>
+<meta content="Tim Taubert" name="author">
+<meta content="Christopher A. Wood" name="author">
+<meta content="
+       This document describes SPAKE2+, a Password Authenticated Key Exchange (PAKE) protocol
+run between two parties for deriving a strong shared key with no risk of disclosing the password.
+SPAKE2+ is an augmented PAKE protocol, as only one party has knowledge of the password.
+This method is simple to implement, compatible with any prime order group and is computationally efficient. 
+    " name="description">
+<meta content="xml2rfc 2.39.0" name="generator">
+<meta content="Internet-Draft" name="keyword">
+<meta content="draft-bar-cfrg-spake2plus-latest" name="ietf.draft">
+<link href="draft-bar-cfrg-spake2plus.xml" type="application/rfc+xml" rel="alternate">
+<link href="#copyright" rel="license">
+<style type="text/css">@import url('https://martinthomson.github.io/i-d-template/fonts.css');
+
+html {
+  --background-color: #fff;
+  --text-color: #222;
+  --title-color: #191919;
+  --link-color: #2a6496;
+  --highlight-color: #f9f9f9;
+  --line-color: #eee;
+  --small-font-size: 14.5px;
+}
+body {
+  max-width: 624px;
+  margin: 75px auto;
+  padding: 0 5px;
+  color: var(--text-color);
+  background-color: var(--background-color);
+  font: 16px/22px "Lora", serif;
+  scroll-behavior: smooth;
+}
+
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  font-family: "Cabin Condensed", sans-serif;
+  font-weight: 600;
+  margin: 0.8em 0 0.3em;
+  font-size-adjust: 0.5;
+  color: var(--title-color);
+}
+#title {
+  padding: 1em 0 0.2em;
+  font-size: 32px;
+  line-height: 40px;
+  clear: both;
+}
+h1, h2, h3 {
+  font-size: 22px;
+  line-height: 26px;
+}
+h4, h5, h6 {
+  font-size: 18px;
+  line-height: 22px;
+}
+
+/* general structure */
+.author {
+  padding-bottom: 0.3em;
+}
+#abstract+p, #abstract+p code, #abstract+p samp, #abstract+p tt {
+  font-size: 18px;
+  line-height: 24px;
+}
+p {
+  padding: 0;
+  margin: 0.5em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: var(--highlight-color);
+  border: 1px solid var(--line-color);
+  border-radius: 3px;
+  padding: 0.5em 1em 0;
+  margin-bottom: 0.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+  width: auto;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+.alignCenter.art-text {
+  background-color: var(--highlight-color);
+  border: 1px solid var(--line-color);
+  border-radius: 3px;
+  padding: 0.5em 1em 0;
+  margin-bottom: 0.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+  width: auto;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  border: none;
+  /* this isn't optimal, but it's an existence proof.  PrinceXML doesn't
+     support flexbox yet.
+  */
+  display: table;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a, a[href].selfRef:hover {
+  text-decoration: none;
+}
+a[href].selfRef {
+  color: var(--text-color);
+}
+a[href] {
+  color: var(--link-color);
+}
+a[href]:hover {
+  text-decoration: underline;
+}
+a[href].selfRef:hover {
+  background-color: var(--highlight-color);
+}
+a.xref {
+  white-space: nowrap;
+}
+
+/* Figures */
+tt, code, pre {
+  background-color: var(--highlight-color);
+  font: 14px/22px 'Oxygen Mono', monospace;
+}
+pre {
+  border: 1px solid var(--line-color);
+  line-height: 17px;
+  margin: 5px;
+  padding: 5px;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0.5em 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption, caption {
+  font-style: italic;
+  margin: 0.5em 1.5em;
+  text-align: left;
+}
+@media screen {
+  pre {
+    display: inline-block;
+    overflow-x: auto;
+    max-width: 100%;
+    width: calc(100% - 22px - 1em);
+  }
+  figure pre {
+    display: block;
+    width: calc(100% - 25px);
+  }
+  pre + .pilcrow {
+    display: inline-block;
+    vertical-align: text-bottom;
+    padding-bottom: 8px;
+  }
+  table {
+    display: inline-block;
+    overflow-x: auto;
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 0 2em;
+  font-style: italic;
+}
+blockquote {
+  background-color: var(--highlight-color);
+  border: 1px solid var(--line-color);
+  border-radius: 3px;
+  margin: 1em 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid var(--line-color);
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #eee;
+}
+tr:nth-child(2n) > td {
+  background-color: var(--background-color);
+}
+tr:nth-child(2n+1) > td {
+  background-color: var(--highlight-color);
+}
+thead+tbody tr:nth-child(2n) > td {
+  background-color: var(--highlight-color);
+}
+thead+tbody tr:nth-child(2n+1) > td {
+  background-color: var(--background-color);
+}
+table caption {
+  font-style: italic;
+  margin: 0.3em 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  margin-left: 3px;
+  visibility: hidden;
+  user-select: none;
+}
+a.pilcrow[href] { color: #ddd; }
+a.pilcrow[href]:hover { text-decoration: none; }
+@media screen {
+  :hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid var(--line-color);
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: var(--small-font-size);
+  line-height: 18px;
+  --identifier-width: 8em;
+}
+#identifiers dt {
+  width: var(--identifier-width);
+  margin: 0;
+  clear: left;
+  float: left;
+  text-align: right;
+}
+#identifiers dd {
+  margin: 0 0 0 calc(1em + var(--identifier-width));
+  min-width: 5em;
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #999;
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+#toc nav ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+#toc nav li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+#toc a.xref {
+  white-space: normal;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    column-count: 2;
+    column-gap: 20px;
+  }
+  .index ul ul {
+    column-count: 1;
+    column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+@media (min-width: 600px) {
+  #authors-addresses > section {
+    display: relative;
+    padding: 32px 0 0;
+    column-count: 2;
+    column-gap: 20px;
+  }
+  #name-authors-addresses {
+    position: absolute;
+    top: 0px;
+    column-span: all;
+  }
+  /* hack for break-inside: avoid-column */
+  #authors-addresses address {
+    display: inline-block;
+    break-inside: avoid-column;
+  }
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #b76427;
+  background-color: rgba(249, 232, 105, 0.3);
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: rgba(249, 232, 105, 0.3);
+  border-radius: 3px;
+}
+.cref {
+  background-color: rgba(249, 232, 105, 0.3);
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 953px) {
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    border-bottom: 1px solid #ccc;
+    opacity: 0.6;
+  }
+  #toc.active {
+      opacity: 1;
+  }
+  #toc h2 {
+    margin: 0;
+    padding: 2px 0 2px 6px;
+    padding-right: 1em;
+    font-size: 18px;
+    line-height: 24px;
+    min-width: 190px;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 8px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    background-color: var(--background-color);
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    overscroll-behavior: contain;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+  #toc.active nav {
+    display: block;
+  }
+  /* Make the collapsed ToC header render white on gray also when it's a link */
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+  #toc a.toplink {
+    margin-top: 2px;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 954px) {
+  body {
+    padding-right: 380px;
+  }
+  #toc {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    right: calc(50vw - 480px);
+    width: 312px;
+    margin: 0;
+    padding: 0;
+    z-index: 1;
+  }
+  #toc h2 {
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 2em;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+  #toc nav > ul  {
+    margin-bottom: 2em;
+  }
+  #toc ul {
+    margin: 0 0 0 4px;
+    font-size: var(--small-font-size);
+  }
+  #toc ul p, #toc ul li {
+    margin: 2px 0;
+    line-height: 22px;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+}
+
+/* Changes introduced to fix issues found during implementation */
+
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin: 8px 0.5em 0;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 20em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  dd {
+    page-break-before: avoid;
+  }
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+</style>
+<link href="rfc-local.css" type="text/css" rel="stylesheet">
+</head>
+<body>
+<table class="ears">
+<thead><tr>
+<td class="left">Internet-Draft</td>
+<td class="center">spake2plus</td>
+<td class="right">March 2020</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Taubert &amp; Wood</td>
+<td class="center">Expires 21 September 2020</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-workgroup">Workgroup:</dt>
+<dd class="workgroup">Network Working Group</dd>
+<dt class="label-internet-draft">Internet-Draft:</dt>
+<dd class="internet-draft">draft-bar-cfrg-spake2plus-latest</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2020-03-20" class="published">20 March 2020</time>
+    </dd>
+<dt class="label-intended-status">Intended Status:</dt>
+<dd class="intended-status">Informational</dd>
+<dt class="label-expires">Expires:</dt>
+<dd class="expires"><time datetime="2020-09-21">21 September 2020</time></dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">T. Taubert</div>
+<div class="org">Apple Inc.</div>
+</div>
+<div class="author">
+      <div class="author-name">C.A. Wood</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="title">SPAKE2+, an Augmented PAKE</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">This document describes SPAKE2+, a Password Authenticated Key Exchange (PAKE) protocol
+run between two parties for deriving a strong shared key with no risk of disclosing the password.
+SPAKE2+ is an augmented PAKE protocol, as only one party has knowledge of the password.
+This method is simple to implement, compatible with any prime order group and is computationally efficient.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<section class="note rfcEditorRemove" id="section-note.1">
+      <h2 id="name-discussion-venues">
+<a href="#name-discussion-venues" class="section-name selfRef">Discussion Venues</a>
+      </h2>
+<p id="section-note.1-1">This note is to be removed before publishing as an RFC.<a href="#section-note.1-1" class="pilcrow">¶</a></p>
+<p id="section-note.1-2">Source for this draft and an issue tracker can be found at
+  <a href="https://github.com/chris-wood/draft-bar-cfrg-spake2plus">https://github.com/chris-wood/draft-bar-cfrg-spake2plus</a>.<a href="#section-note.1-2" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+        This Internet-Draft is submitted in full conformance with the
+        provisions of BCP 78 and BCP 79.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+        Internet-Drafts are working documents of the Internet Engineering Task
+        Force (IETF). Note that other groups may also distribute working
+        documents as Internet-Drafts. The list of current Internet-Drafts is
+        at <span><a href="https://datatracker.ietf.org/drafts/current/">https://datatracker.ietf.org/drafts/current/</a></span>.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+        Internet-Drafts are draft documents valid for a maximum of six months
+        and may be updated, replaced, or obsoleted by other documents at any
+        time. It is inappropriate to use Internet-Drafts as reference
+        material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-4">
+        This Internet-Draft will expire on 21 September 2020.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2020 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Simplified BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Simplified BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="toc ulEmpty">
+<li class="toc ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1"><a href="#section-1" class="xref">1</a>.  <a href="#name-introduction" class="xref">Introduction</a><a href="#section-toc.1-1.1.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1"><a href="#section-2" class="xref">2</a>.  <a href="#name-requirements-notation" class="xref">Requirements Notation</a><a href="#section-toc.1-1.2.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="xref">3</a>.  <a href="#name-definition-of-spake2" class="xref">Definition of SPAKE2+</a><a href="#section-toc.1-1.3.1" class="pilcrow">¶</a></p>
+<ul class="toc ulEmpty">
+<li class="toc ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1"><a href="#section-3.1" class="xref">3.1</a>.  <a href="#name-offline-initialization" class="xref">Offline Initialization</a><a href="#section-toc.1-1.3.2.1.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="xref">3.2</a>.  <a href="#name-protocol-flow" class="xref">Protocol Flow</a><a href="#section-toc.1-1.3.2.2.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.3.2.3">
+                <p id="section-toc.1-1.3.2.3.1"><a href="#section-3.3" class="xref">3.3</a>.  <a href="#name-spake2" class="xref">SPAKE2+</a><a href="#section-toc.1-1.3.2.3.1" class="pilcrow">¶</a></p>
+</li>
+</ul>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="xref">4</a>.  <a href="#name-key-schedule-and-key-confir" class="xref">Key Schedule and Key Confirmation</a><a href="#section-toc.1-1.4.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="xref">5</a>.  <a href="#name-ciphersuites" class="xref">Ciphersuites</a><a href="#section-toc.1-1.5.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="xref">6</a>.  <a href="#name-iana-considerations" class="xref">IANA Considerations</a><a href="#section-toc.1-1.6.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="xref">7</a>.  <a href="#name-security-considerations" class="xref">Security Considerations</a><a href="#section-toc.1-1.7.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="xref">8</a>.  <a href="#name-acknowledgements" class="xref">Acknowledgements</a><a href="#section-toc.1-1.8.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="xref">9</a>.  <a href="#name-references" class="xref">References</a><a href="#section-toc.1-1.9.1" class="pilcrow">¶</a></p>
+<ul class="toc ulEmpty">
+<li class="toc ulEmpty" id="section-toc.1-1.9.2.1">
+                <p id="section-toc.1-1.9.2.1.1"><a href="#section-9.1" class="xref">9.1</a>.  <a href="#name-normative-references" class="xref">Normative References</a><a href="#section-toc.1-1.9.2.1.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.9.2.2">
+                <p id="section-toc.1-1.9.2.2.1"><a href="#section-9.2" class="xref">9.2</a>.  <a href="#name-informative-references" class="xref">Informative References</a><a href="#section-toc.1-1.9.2.2.1" class="pilcrow">¶</a></p>
+</li>
+</ul>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#section-appendix.a" class="xref">Appendix A</a>.  <a href="#name-algorithm-used-for-point-ge" class="xref">Algorithm used for Point Generation</a><a href="#section-toc.1-1.10.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#section-appendix.b" class="xref">Appendix B</a>.  <a href="#name-test-vectors" class="xref">Test Vectors</a><a href="#section-toc.1-1.11.1" class="pilcrow">¶</a></p>
+</li>
+<li class="toc ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#section-appendix.c" class="xref"></a><a href="#name-authors-addresses" class="xref">Authors' Addresses</a><a href="#section-toc.1-1.12.1" class="pilcrow">¶</a></p>
+</li>
+</ul>
+</nav>
+</section>
+</div>
+<div id="introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">This document describes SPAKE2+, a Password Authenticated Key Exchange (PAKE) protocol
+run between two parties for deriving a strong shared key with no risk of disclosing the password.
+SPAKE2+ is an augmented PAKE protocol, as only one party makes direct use of the password during the execution of the protocol.
+The other party only needs a verification value at the time of the protocol execution instead of the password.
+The verification value can be computed once, during an offline initialization phase.
+The party using the password directly would typically be a client, and acts as a prover,
+while the other party would be a server, and acts as verifier.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">The protocol is augmented in the sense that it provides some resilience to the compromise or extraction of the verification value.
+The design of the protocol forces the adversary to recover the password from the verification value to successful execute the protocol.
+Hence this protocol can be advantageously combined with a salted Password Hashing Function to increase the cost of the recovery and slow down attacks.
+The verification value cannot be used directly to successfully run the protocol as a prover,
+making this protocol more robust than balanced PAKEs which don't benefit from Password Hashing Functions to the same extend.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">This augmented property is especially valuable in scenarios where the execution of the protocol is constrained
+and the adversary can not query the salt of the password hash function ahead of the attack.
+Constraints may consist in being in physical proximity through a local network or
+when initiation of the protocol requires a first authentication factor.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">This password-based key exchange protocol is compatible with any group.
+It only relies on group operations making it simple and computationally efficient. It also has a security proof.
+Predetermined parameters for a selection of commonly used groups are also provided.<a href="#section-1-4" class="pilcrow">¶</a></p>
+<p id="section-1-5">This document has content split out from a related document specifying SPAKE2 <span>[<a href="#I-D.irtf-cfrg-spake2" class="xref">I-D.irtf-cfrg-spake2</a>]</span>.<a href="#section-1-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="requirements-notation">
+<section id="section-2">
+      <h2 id="name-requirements-notation">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-requirements-notation" class="section-name selfRef">Requirements Notation</a>
+      </h2>
+<p id="section-2-1">The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+"SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+document are to be interpreted as described in <span>[<a href="#RFC2119" class="xref">RFC2119</a>]</span>.<a href="#section-2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="definition-of-spake2">
+<section id="section-3">
+      <h2 id="name-definition-of-spake2">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-definition-of-spake2" class="section-name selfRef">Definition of SPAKE2+</a>
+      </h2>
+<div id="setup">
+<section id="section-3.1">
+        <h3 id="name-offline-initialization">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-offline-initialization" class="section-name selfRef">Offline Initialization</a>
+        </h3>
+<p id="section-3.1-1">Let G be a group in which the computational Diffie-Hellman (CDH)
+problem is hard. Suppose G has order p*h where p is a large prime;
+h will be called the cofactor. Let I be the unit element in
+G, e.g., the point at infinity if G is an elliptic curve group. We denote the
+operations in the group additively. We assume there is a representation of
+elements of G as byte strings: common choices would be SEC1
+uncompressed or compressed <span>[<a href="#SEC1" class="xref">SEC1</a>]</span> for elliptic curve groups or big
+endian integers of a fixed (per-group) length for prime field DH.
+We fix two elements M and N in the prime-order subgroup of G as defined
+in the table in this document for common groups, as well as a generator P
+of the (large) prime-order subgroup of G. P is specified in the document defining
+the group, and so we do not repeat it here.<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<p id="section-3.1-2">|| denotes concatenation of strings. We also let len(S) denote the
+length of a string in bytes, represented as an eight-byte little-
+endian number. Finally, let nil represent an empty string, i.e.,
+len(nil) = 0.<a href="#section-3.1-2" class="pilcrow">¶</a></p>
+<p id="section-3.1-3">KDF is a key-derivation function that takes as input a salt, intermediate
+keying material (IKM), info string, and derived key length L to derive a
+cryptographic key of length L.
+MAC is a Message Authentication Code algorithm that takes a secret key and
+message as input to produce an output.
+Let Hash be a hash function from arbitrary strings to bit strings of a fixed length. Common choices
+for Hash are SHA256 or SHA512 <span>[<a href="#RFC6234" class="xref">RFC6234</a>]</span>.
+Let PBKDF be a Password-Based Key Derivation Function designed to slow down brute-force attackers.
+Brute-force resistance may be obtained through various computation hardness parameters such as memory or CPU cycles,
+and are typically configurable.
+Scrypt <span>[<a href="#RFC7914" class="xref">RFC7914</a>]</span> and Argon2 are common examples of PBKDF functions.
+PBKDF and hardness parameters selection for the PBKDF are out of scope of this document.
+<a href="#Ciphersuites" class="xref">Section 5</a> specifies variants of KDF, MAC, and Hash
+suitable for use with the protocols contained herein.<a href="#section-3.1-3" class="pilcrow">¶</a></p>
+<p id="section-3.1-4">Let A and B be two parties. A and B may also have digital
+representations of the parties' identities such as Media Access Control addresses
+or other names (hostnames, usernames, etc). A and B may share Additional
+Authenticated Data (AAD) of length at most 2^16 - 1 bits that is separate
+from their identities which they may want to include in the protocol execution.
+One example of AAD is a list of supported protocol versions if SPAKE2+ were
+used in a higher-level protocol which negotiates the use of a particular PAKE. Including
+this list would ensure that both parties agree upon the same set of supported protocols
+and therefore prevent downgrade attacks.<a href="#section-3.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="flow">
+<section id="section-3.2">
+        <h3 id="name-protocol-flow">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-protocol-flow" class="section-name selfRef">Protocol Flow</a>
+        </h3>
+<p id="section-3.2-1">SPAKE2+ is a two round protocol that establishes a shared secret with an
+additional round for key confirmation. Prior to invocation, A and B are provisioned with
+information such as the input password needed to run the protocol.
+A preamble exchange may occur in order to communicate identities, protocol version and PBKDF parameters related to the verification value.
+Details of the preamble phase is out of scope of this document.
+During the first round, A, the prover, sends a public share pA
+to B, the verifier, and B responds with its own public share pB. Both A and B then derive a shared secret
+used to produce encryption and authentication keys. The latter are used during the second
+round for key confirmation. (<a href="#keys" class="xref">Section 4</a> details the key derivation and
+confirmation steps.) In particular, B sends a key confirmation message cB to A, and A responds
+with its own key confirmation message cA. (Note that pB and cB MAY be sent in the same message.)
+Both parties MUST NOT consider the protocol complete prior to receipt and validation of these key
+confirmation messages.<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+<p id="section-3.2-2">This sample trace is shown below.<a href="#section-3.2-2" class="pilcrow">¶</a></p>
+<div class="artwork art-text alignLeft" id="section-3.2-3">
+<pre>
+               A                           B
+
+               |         (Preamble)        |
+               |&lt;- - - - - - - - - - - - -&gt;|
+               |                           |
+               |       (setup protocol)    |
+  (compute pA) |             pA            |
+               |--------------------------&gt;|
+               |             pB            | (compute pB)
+               |&lt;--------------------------|
+               |                           |
+               |       (derive secrets)    | (compute cB)
+               |             cB            |
+               |&lt;--------------------------|
+  (compute cA) |             cA            |
+               |--------------------------&gt;|
+
+</pre><a href="#section-3.2-3" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="spake2plus">
+<section id="section-3.3">
+        <h3 id="name-spake2">
+<a href="#section-3.3" class="section-number selfRef">3.3. </a><a href="#name-spake2" class="section-name selfRef">SPAKE2+</a>
+        </h3>
+<p id="section-3.3-1">This protocol appears in <span>[<a href="#TDH" class="xref">TDH</a>]</span> and is proven secure in <span>[<a href="#UCAnalysis" class="xref">UCAnalysis</a>]</span>. Let w0
+and w1 be two integers derived by hashing the password pw with the identities
+of the two participants, A and B. Specifically,
+w0s || w1s = PBKDF(len(pw) || pw || len(A) || A || len(B) || B),
+and then computing w0 = w0s mod p and w1 = w1s mod p.
+If both identities A and B are absent, then w0s || w1s = PBKDF(pw), i.e.,
+the length prefix is omitted as in <a href="#setup" class="xref">Section 3.1</a>.
+The party B stores the verification value pair L=w1*P and w0.<a href="#section-3.3-1" class="pilcrow">¶</a></p>
+<p id="section-3.3-2">Note that standards such as NIST.SP.800-56Ar3 suggest taking mod p of a
+hash value that is 64 bits longer than that needed to represent p to remove
+statistical bias introduced by the modulation. Protocols using this specification must define
+the method used to compute w0 and w1: it may be necessary to carry out various
+forms of normalization of the password before hashing <span>[<a href="#RFC8265" class="xref">RFC8265</a>]</span>.
+The hashing algorithm SHOULD be a PBKDF so as to slow down brute-force
+attackers.<a href="#section-3.3-2" class="pilcrow">¶</a></p>
+<p id="section-3.3-3">When executing SPAKE2+, A selects x uniformly at random from the
+numbers in the range [0, p), and lets X=x*P+w0*M, then transmits pA=X to
+B. Upon receipt of X, A computes h*X and aborts if the result is equal
+to I. B then selects y uniformly at random from the numbers in [0, p),
+then computes Y=y*P+w0*N, and transmits pB=Y to A.<a href="#section-3.3-3" class="pilcrow">¶</a></p>
+<p id="section-3.3-4">A computes Z as h*x*(Y-w0*N), and V as h*w1*(Y-w0*N). B computes Z as h*y*(X-
+w0*M) and V as h*y*L. Both share Z and V as common values. It is essential
+that both Z and V be used in combination with the transcript to
+derive the keying material. The protocol transcript encoding is shown below.<a href="#section-3.3-4" class="pilcrow">¶</a></p>
+<div class="artwork art-text alignLeft" id="section-3.3-5">
+<pre>
+TT = len(A) || A || len(B) || B || len(X) || X
+  || len(Y) || Y || len(Z) || Z || len(V) || V
+  || len(w0) || w0
+</pre><a href="#section-3.3-5" class="pilcrow">¶</a>
+</div>
+<p id="section-3.3-6">If an identity is absent, it is omitted from the transcript entirely. For example,
+if both A and B are absent, then TT = len(X) || X || len(Y) || Y || len(Z) || Z || len(w0) || w0.
+Likewise, if only A is absent, TT = len(B) || B || len(X) || X || len(Y) || Y || len(Z) || Z || len(w0) || w0.
+This must only be done for applications in which identities are implicit. Otherwise,
+the protocol risks Unknown Key Share attacks (discussion of Unknown Key Share attacks
+in a specific protocol is given in <span>[<a href="#I-D.ietf-mmusic-sdp-uks" class="xref">I-D.ietf-mmusic-sdp-uks</a>]</span>.<a href="#section-3.3-6" class="pilcrow">¶</a></p>
+<p id="section-3.3-7">Upon completion of this protocol, A and B compute shared secrets Ke, KcA, and KcB as
+specified in <a href="#keys" class="xref">Section 4</a>. B MUST send A a key confirmation message Fb
+so both parties agree upon these shared secrets. This confirmation message Fb
+is computed as a MAC over the received share (pA) using KcB. Specifically, B
+computes Fb = MAC(KcB, pA). After receipt and verification of B's confirmation
+message, A MUST send B a confirmation message using a MAC computed equivalently
+except with the use of pB and KcA. Key confirmation verification requires computing
+F and checking for equality against that which was received.<a href="#section-3.3-7" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="keys">
+<section id="section-4">
+      <h2 id="name-key-schedule-and-key-confir">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-key-schedule-and-key-confir" class="section-name selfRef">Key Schedule and Key Confirmation</a>
+      </h2>
+<p id="section-4-1">The protocol transcript TT, as defined in <a href="#spake2plus" class="xref">Section 3.3</a>,
+is unique and secret to A and B. Both parties use TT to
+derive shared symmetric secrets Ke and Ka as Ke || Ka = Hash(TT). The length of each
+key is equal to half of the digest output, e.g., |Ke| = |Ka| = 128 bits for SHA-256.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-4-2">Both endpoints use Ka to derive subsequent MAC keys for key confirmation messages.
+Specifically, let KcA and KcB be the MAC keys used by A and B, respectively.
+A and B compute them as KcA || KcB = KDF(nil, Ka, "ConfirmationKeys" || AAD), where AAD
+is the associated data each given to each endpoint, or nil (empty string)
+if none was provided.
+AAD may also include a string identifying the protocol, ciphersuite and all its parameters,
+including the definition of the group, and the element M and N. It may be omitted.<a href="#section-4-2" class="pilcrow">¶</a></p>
+<p id="section-4-3">The length of each of KcA and KcB is equal to half of the KDF
+output, e.g., |KcA| = |KcB| = 128 bits for HKDF with SHA256.<a href="#section-4-3" class="pilcrow">¶</a></p>
+<p id="section-4-4">The resulting key schedule for this protocol, given transcript TT and additional associated data AAD, is as follows.<a href="#section-4-4" class="pilcrow">¶</a></p>
+<div class="artwork art-text alignLeft" id="section-4-5">
+<pre>
+TT  -&gt; Hash(TT) = Ka || Ke
+AAD -&gt; KDF(nil, Ka, "ConfirmationKeys" || AAD) = KcA || KcB
+</pre><a href="#section-4-5" class="pilcrow">¶</a>
+</div>
+<p id="section-4-6">A and B output Ke as the shared secret from the protocol. Ka and its derived keys (KcA and KcB)
+are not used for anything except key confirmation.<a href="#section-4-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="Ciphersuites">
+<section id="section-5">
+      <h2 id="name-ciphersuites">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-ciphersuites" class="section-name selfRef">Ciphersuites</a>
+      </h2>
+<p id="section-5-1">This section documents SPAKE2+ ciphersuite configurations. A ciphersuite
+indicates a group, cryptographic hash algorithm, and pair of KDF and MAC functions, e.g.,
+SPAKE2+-P256-SHA256-HKDF-HMAC. This ciphersuite indicates a SPAKE2+ protocol instance over
+P-256 that uses SHA256 along with HKDF <span>[<a href="#RFC5869" class="xref">RFC5869</a>]</span> and HMAC <span>[<a href="#RFC2104" class="xref">RFC2104</a>]</span>
+for G, Hash, KDF, and MAC functions, respectively.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<table class="center" id="table-1">
+        <caption><a href="#table-1" class="selfRef">Table 1</a></caption>
+<thead>
+          <tr>
+            <th class="text-left" rowspan="1" colspan="1">G</th>
+            <th class="text-center" rowspan="1" colspan="1">Hash</th>
+            <th class="text-center" rowspan="1" colspan="1">KDF</th>
+            <th class="text-center" rowspan="1" colspan="1">MAC</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">P-256</td>
+            <td class="text-center" rowspan="1" colspan="1">SHA256 <span>[<a href="#RFC6234" class="xref">RFC6234</a>]</span>
+</td>
+            <td class="text-center" rowspan="1" colspan="1">HKDF <span>[<a href="#RFC5869" class="xref">RFC5869</a>]</span>
+</td>
+            <td class="text-center" rowspan="1" colspan="1">HMAC <span>[<a href="#RFC2104" class="xref">RFC2104</a>]</span>
+</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">P-256</td>
+            <td class="text-center" rowspan="1" colspan="1">SHA512 <span>[<a href="#RFC6234" class="xref">RFC6234</a>]</span>
+</td>
+            <td class="text-center" rowspan="1" colspan="1">HKDF <span>[<a href="#RFC5869" class="xref">RFC5869</a>]</span>
+</td>
+            <td class="text-center" rowspan="1" colspan="1">HMAC <span>[<a href="#RFC2104" class="xref">RFC2104</a>]</span>
+</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">P-384</td>
+            <td class="text-center" rowspan="1" colspan="1">SHA256 <span>[<a href="#RFC6234" class="xref">RFC6234</a>]</span>
+</td>
+            <td class="text-center" rowspan="1" colspan="1">HKDF <span>[<a href="#RFC5869" class="xref">RFC5869</a>]</span>
+</td>
+            <td class="text-center" rowspan="1" colspan="1">HMAC <span>[<a href="#RFC2104" class="xref">RFC2104</a>]</span>
+</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">P-384</td>
+            <td class="text-center" rowspan="1" colspan="1">SHA512 <span>[<a href="#RFC6234" class="xref">RFC6234</a>]</span>
+</td>
+            <td class="text-center" rowspan="1" colspan="1">HKDF <span>[<a href="#RFC5869" class="xref">RFC5869</a>]</span>
+</td>
+            <td class="text-center" rowspan="1" colspan="1">HMAC <span>[<a href="#RFC2104" class="xref">RFC2104</a>]</span>
+</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">P-521</td>
+            <td class="text-center" rowspan="1" colspan="1">SHA512 <span>[<a href="#RFC6234" class="xref">RFC6234</a>]</span>
+</td>
+            <td class="text-center" rowspan="1" colspan="1">HKDF <span>[<a href="#RFC5869" class="xref">RFC5869</a>]</span>
+</td>
+            <td class="text-center" rowspan="1" colspan="1">HMAC <span>[<a href="#RFC2104" class="xref">RFC2104</a>]</span>
+</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">edwards25519</td>
+            <td class="text-center" rowspan="1" colspan="1">SHA256 <span>[<a href="#RFC6234" class="xref">RFC6234</a>]</span>
+</td>
+            <td class="text-center" rowspan="1" colspan="1">HKDF <span>[<a href="#RFC5869" class="xref">RFC5869</a>]</span>
+</td>
+            <td class="text-center" rowspan="1" colspan="1">HMAC <span>[<a href="#RFC2104" class="xref">RFC2104</a>]</span>
+</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">edwards448</td>
+            <td class="text-center" rowspan="1" colspan="1">SHA512 <span>[<a href="#RFC6234" class="xref">RFC6234</a>]</span>
+</td>
+            <td class="text-center" rowspan="1" colspan="1">HKDF <span>[<a href="#RFC5869" class="xref">RFC5869</a>]</span>
+</td>
+            <td class="text-center" rowspan="1" colspan="1">HMAC <span>[<a href="#RFC2104" class="xref">RFC2104</a>]</span>
+</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">P-256</td>
+            <td class="text-center" rowspan="1" colspan="1">SHA256 <span>[<a href="#RFC6234" class="xref">RFC6234</a>]</span>
+</td>
+            <td class="text-center" rowspan="1" colspan="1">HKDF <span>[<a href="#RFC5869" class="xref">RFC5869</a>]</span>
+</td>
+            <td class="text-center" rowspan="1" colspan="1">CMAC-AES-128 <span>[<a href="#RFC4493" class="xref">RFC4493</a>]</span>
+</td>
+          </tr>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">P-256</td>
+            <td class="text-center" rowspan="1" colspan="1">SHA512 <span>[<a href="#RFC6234" class="xref">RFC6234</a>]</span>
+</td>
+            <td class="text-center" rowspan="1" colspan="1">HKDF <span>[<a href="#RFC5869" class="xref">RFC5869</a>]</span>
+</td>
+            <td class="text-center" rowspan="1" colspan="1">CMAC-AES-128 <span>[<a href="#RFC4493" class="xref">RFC4493</a>]</span>
+</td>
+          </tr>
+        </tbody>
+      </table>
+<p id="section-5-3">The following points represent permissible point generation seeds
+for the groups listed in the Table above,
+using the algorithm presented in <a href="#pointgen" class="xref">Appendix A</a>.
+These bytestrings are compressed points as in <span>[<a href="#SEC1" class="xref">SEC1</a>]</span>
+for curves from <span>[<a href="#SEC1" class="xref">SEC1</a>]</span>.<a href="#section-5-3" class="pilcrow">¶</a></p>
+<p id="section-5-4">For P256:
+~~~
+M =
+02886e2f97ace46e55ba9dd7242579f2993b64e16ef3dcab95afd497333d8fa12f
+seed: 1.2.840.10045.3.1.7 point generation seed (M)<a href="#section-5-4" class="pilcrow">¶</a></p>
+<p id="section-5-5">N =
+03d8bbd6c639c62937b04d997f38c3770719c629d7014d49a24b4f98baa1292b49
+seed: 1.2.840.10045.3.1.7 point generation seed (N)
+~~~<a href="#section-5-5" class="pilcrow">¶</a></p>
+<p id="section-5-6">For P384:
+~~~
+M =
+030ff0895ae5ebf6187080a82d82b42e2765e3b2f8749c7e05eba366434b363d3dc
+36f15314739074d2eb8613fceec2853
+seed: 1.3.132.0.34 point generation seed (M)<a href="#section-5-6" class="pilcrow">¶</a></p>
+<p id="section-5-7">N =
+02c72cf2e390853a1c1c4ad816a62fd15824f56078918f43f922ca21518f9c543bb
+252c5490214cf9aa3f0baab4b665c10
+seed: 1.3.132.0.34 point generation seed (N)
+~~~<a href="#section-5-7" class="pilcrow">¶</a></p>
+<p id="section-5-8">For P521:
+~~~
+M =
+02003f06f38131b2ba2600791e82488e8d20ab889af753a41806c5db18d37d85608
+cfae06b82e4a72cd744c719193562a653ea1f119eef9356907edc9b56979962d7aa
+seed: 1.3.132.0.35 point generation seed (M)<a href="#section-5-8" class="pilcrow">¶</a></p>
+<p id="section-5-9">N =
+0200c7924b9ec017f3094562894336a53c50167ba8c5963876880542bc669e494b25
+32d76c5b53dfb349fdf69154b9e0048c58a42e8ed04cef052a3bc349d95575cd25
+seed: 1.3.132.0.35 point generation seed (N)
+~~~<a href="#section-5-9" class="pilcrow">¶</a></p>
+<p id="section-5-10">For edwards25519:
+~~~
+M =
+d048032c6ea0b6d697ddc2e86bda85a33adac920f1bf18e1b0c6d166a5cecdaf
+seed: edwards25519 point generation seed (M)<a href="#section-5-10" class="pilcrow">¶</a></p>
+<p id="section-5-11">N =
+d3bfb518f44f3430f29d0c92af503865a1ed3281dc69b35dd868ba85f886c4ab
+seed: edwards25519 point generation seed (N)
+~~~<a href="#section-5-11" class="pilcrow">¶</a></p>
+<p id="section-5-12">For edwards448:
+~~~
+M =
+b6221038a775ecd007a4e4dde39fd76ae91d3cf0cc92be8f0c2fa6d6b66f9a12
+942f5a92646109152292464f3e63d354701c7848d9fc3b8880
+seed: edwards448 point generation seed (M)<a href="#section-5-12" class="pilcrow">¶</a></p>
+<p id="section-5-13">N =
+6034c65b66e4cd7a49b0edec3e3c9ccc4588afd8cf324e29f0a84a072531c4db
+f97ff9af195ed714a689251f08f8e06e2d1f24a0ffc0146600
+seed: edwards448 point generation seed (N)
+~~~<a href="#section-5-13" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="iana-considerations">
+<section id="section-6">
+      <h2 id="name-iana-considerations">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-6-1">No IANA action is required.<a href="#section-6-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="security-considerations">
+<section id="section-7">
+      <h2 id="name-security-considerations">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-7-1">SPAKE2+ appears in <span>[<a href="#TDH" class="xref">TDH</a>]</span> along with a path to a proof that
+server compromise does not lead to password compromise under the DH assumption
+(though the corresponding model excludes pre-computation attacks).<a href="#section-7-1" class="pilcrow">¶</a></p>
+<p id="section-7-2">Elements received from a peer MUST be checked for group membership:
+failure to properly validate group elements can lead to attacks. Beyond the cofactor
+multiplication checks to ensure that these elements are in the prime order subgroup
+of G, it is essential that endpoints verify received points are members of G.<a href="#section-7-2" class="pilcrow">¶</a></p>
+<p id="section-7-3">The choices of random numbers MUST BE uniform. Randomly generated values (e.g., x and y)
+MUST NOT be reused; such reuse may permit dictionary attacks on the password.<a href="#section-7-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="acknowledgements">
+<section id="section-8">
+      <h2 id="name-acknowledgements">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-acknowledgements" class="section-name selfRef">Acknowledgements</a>
+      </h2>
+<p id="section-8-1">Thanks to Ben Kaduk and Watson Ladd, from which this specification originally emanated.<a href="#section-8-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<section id="section-9">
+      <h2 id="name-references">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-9.1">
+        <h3 id="name-normative-references">
+<a href="#section-9.1" class="section-number selfRef">9.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="I-D.irtf-cfrg-spake2">[I-D.irtf-cfrg-spake2]</dt>
+<dd>
+<span class="refAuthor">Ladd, W.</span><span class="refAuthor"> and B. Kaduk</span>, <span class="refTitle">"SPAKE2, a PAKE"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-irtf-cfrg-spake2-10</span>, <time datetime="2020-02-18">18 February 2020</time>, <span>&lt;<a href="http://www.ietf.org/internet-drafts/draft-irtf-cfrg-spake2-10.txt">http://www.ietf.org/internet-drafts/draft-irtf-cfrg-spake2-10.txt</a>&gt;</span>. </dd>
+<dt id="RFC2104">[RFC2104]</dt>
+<dd>
+<span class="refAuthor">Krawczyk, H.</span><span class="refAuthor">, Bellare, M.</span><span class="refAuthor">, and R. Canetti</span>, <span class="refTitle">"HMAC: Keyed-Hashing for Message Authentication"</span>, <span class="seriesInfo">RFC 2104</span>, <span class="seriesInfo">DOI 10.17487/RFC2104</span>, <time datetime="1997-02">February 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2104">https://www.rfc-editor.org/info/rfc2104</a>&gt;</span>. </dd>
+<dt id="RFC2119">[RFC2119]</dt>
+<dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dt id="RFC4493">[RFC4493]</dt>
+<dd>
+<span class="refAuthor">Song, JH.</span><span class="refAuthor">, Poovendran, R.</span><span class="refAuthor">, Lee, J.</span><span class="refAuthor">, and T. Iwata</span>, <span class="refTitle">"The AES-CMAC Algorithm"</span>, <span class="seriesInfo">RFC 4493</span>, <span class="seriesInfo">DOI 10.17487/RFC4493</span>, <time datetime="2006-06">June 2006</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc4493">https://www.rfc-editor.org/info/rfc4493</a>&gt;</span>. </dd>
+<dt id="RFC5480">[RFC5480]</dt>
+<dd>
+<span class="refAuthor">Turner, S.</span><span class="refAuthor">, Brown, D.</span><span class="refAuthor">, Yiu, K.</span><span class="refAuthor">, Housley, R.</span><span class="refAuthor">, and T. Polk</span>, <span class="refTitle">"Elliptic Curve Cryptography Subject Public Key Information"</span>, <span class="seriesInfo">RFC 5480</span>, <span class="seriesInfo">DOI 10.17487/RFC5480</span>, <time datetime="2009-03">March 2009</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5480">https://www.rfc-editor.org/info/rfc5480</a>&gt;</span>. </dd>
+<dt id="RFC5869">[RFC5869]</dt>
+<dd>
+<span class="refAuthor">Krawczyk, H.</span><span class="refAuthor"> and P. Eronen</span>, <span class="refTitle">"HMAC-based Extract-and-Expand Key Derivation Function (HKDF)"</span>, <span class="seriesInfo">RFC 5869</span>, <span class="seriesInfo">DOI 10.17487/RFC5869</span>, <time datetime="2010-05">May 2010</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5869">https://www.rfc-editor.org/info/rfc5869</a>&gt;</span>. </dd>
+<dt id="RFC6234">[RFC6234]</dt>
+<dd>
+<span class="refAuthor">Eastlake 3rd, D.</span><span class="refAuthor"> and T. Hansen</span>, <span class="refTitle">"US Secure Hash Algorithms (SHA and SHA-based HMAC and HKDF)"</span>, <span class="seriesInfo">RFC 6234</span>, <span class="seriesInfo">DOI 10.17487/RFC6234</span>, <time datetime="2011-05">May 2011</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6234">https://www.rfc-editor.org/info/rfc6234</a>&gt;</span>. </dd>
+<dt id="RFC7914">[RFC7914]</dt>
+<dd>
+<span class="refAuthor">Percival, C.</span><span class="refAuthor"> and S. Josefsson</span>, <span class="refTitle">"The scrypt Password-Based Key Derivation Function"</span>, <span class="seriesInfo">RFC 7914</span>, <span class="seriesInfo">DOI 10.17487/RFC7914</span>, <time datetime="2016-08">August 2016</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc7914">https://www.rfc-editor.org/info/rfc7914</a>&gt;</span>. </dd>
+<dt id="RFC8032">[RFC8032]</dt>
+<dd>
+<span class="refAuthor">Josefsson, S.</span><span class="refAuthor"> and I. Liusvaara</span>, <span class="refTitle">"Edwards-Curve Digital Signature Algorithm (EdDSA)"</span>, <span class="seriesInfo">RFC 8032</span>, <span class="seriesInfo">DOI 10.17487/RFC8032</span>, <time datetime="2017-01">January 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8032">https://www.rfc-editor.org/info/rfc8032</a>&gt;</span>. </dd>
+<dt id="RFC8265">[RFC8265]</dt>
+<dd>
+<span class="refAuthor">Saint-Andre, P.</span><span class="refAuthor"> and A. Melnikov</span>, <span class="refTitle">"Preparation, Enforcement, and Comparison of Internationalized Strings Representing Usernames and Passwords"</span>, <span class="seriesInfo">RFC 8265</span>, <span class="seriesInfo">DOI 10.17487/RFC8265</span>, <time datetime="2017-10">October 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8265">https://www.rfc-editor.org/info/rfc8265</a>&gt;</span>. </dd>
+<dt id="SEC1">[SEC1]</dt>
+<dd>
+<span class="refTitle">"Elliptic Curve Cryptography, Standards for Efficient Cryptography Group, ver. 2"</span>, <time datetime="2009">2009</time>, <span>&lt;<a href="https://secg.org/sec1-v2.pdf">https://secg.org/sec1-v2.pdf</a>&gt;</span>. </dd>
+<dt id="TDH">[TDH]</dt>
+<dd>
+<span class="refTitle">"The Twin-Diffie Hellman Problem and Applications"</span>, <span class="seriesInfo">EUROCRYPT 2008.  Volume 4965 of Lecture notes in Computer Science, pages 127-145.  Springer-Verlag, Berlin, Germany. </span>, <time datetime="2008">2008</time>. </dd>
+<dt id="UCAnalysis">[UCAnalysis]</dt>
+<dd>
+<span class="refTitle">"Security analysis of SPAKE2+"</span>, <time datetime="2020">2020</time>, <span>&lt;<a href="https://eprint.iacr.org/2020/313.pdf">https://eprint.iacr.org/2020/313.pdf</a>&gt;</span>. </dd>
+</dl>
+</section>
+<section id="section-9.2">
+        <h3 id="name-informative-references">
+<a href="#section-9.2" class="section-number selfRef">9.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="I-D.ietf-mmusic-sdp-uks">[I-D.ietf-mmusic-sdp-uks]</dt>
+<dd>
+<span class="refAuthor">Thomson, M.</span><span class="refAuthor"> and E. Rescorla</span>, <span class="refTitle">"Unknown Key Share Attacks on uses of TLS with the Session Description Protocol (SDP)"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-mmusic-sdp-uks-07</span>, <time datetime="2019-08-09">9 August 2019</time>, <span>&lt;<a href="http://www.ietf.org/internet-drafts/draft-ietf-mmusic-sdp-uks-07.txt">http://www.ietf.org/internet-drafts/draft-ietf-mmusic-sdp-uks-07.txt</a>&gt;</span>. </dd>
+</dl>
+</section>
+</section>
+<div id="pointgen">
+<section id="section-appendix.a">
+      <h2 id="name-algorithm-used-for-point-ge">
+<a href="#section-appendix.a" class="section-number selfRef">Appendix A. </a><a href="#name-algorithm-used-for-point-ge" class="section-name selfRef">Algorithm used for Point Generation</a>
+      </h2>
+<p id="section-appendix.a-1">This section describes the algorithm that was used to generate
+the points (M) and (N) in the table in <a href="#Ciphersuites" class="xref">Section 5</a>.<a href="#section-appendix.a-1" class="pilcrow">¶</a></p>
+<p id="section-appendix.a-2">For each curve in the table below, we construct a string
+using the curve OID from <span>[<a href="#RFC5480" class="xref">RFC5480</a>]</span> (as an ASCII
+string) or its name,
+combined with the needed constant, for instance "1.3.132.0.35
+point generation seed (M)" for P-512.  This string is turned
+into a series of blocks by hashing with SHA256, and hashing that
+output again to generate the next 32 bytes, and so on.  This
+pattern is repeated for each group and value, with the string
+modified appropriately.<a href="#section-appendix.a-2" class="pilcrow">¶</a></p>
+<p id="section-appendix.a-3">A byte string of length equal to that of an encoded group
+element is constructed by concatenating as many blocks as are
+required, starting from the first block, and truncating to the
+desired length.  The byte string is then formatted as required
+for the group.  In the case of Weierstrass curves, we take the
+desired length as the length for representing a compressed point
+(section 2.3.4 of <span>[<a href="#SEC1" class="xref">SEC1</a>]</span>),
+and use the low-order bit of the first byte as the sign bit.
+In order to obtain the correct format, the value of the first
+byte is set to 0x02 or 0x03 (clearing the first six bits
+and setting the seventh bit), leaving the sign bit as it was
+in the byte string constructed by concatenating hash blocks.
+For the <span>[<a href="#RFC8032" class="xref">RFC8032</a>]</span> curves a different procedure is used.
+For edwards448 the 57-byte input has the least-significant 7 bits of the
+last byte set to zero, and for edwards25519 the 32-byte input is
+not modified.  For both the <span>[<a href="#RFC8032" class="xref">RFC8032</a>]</span> curves the
+(modified) input is then interpreted
+as the representation of the group element.
+If this interpretation yields a valid group element with the
+correct order (p), the (modified) byte string is the output.  Otherwise,
+the initial hash block is discarded and a new byte string constructed
+from the remaining hash blocks. The procedure of constructing a
+byte string of the appropriate length, formatting it as
+required for the curve, and checking if it is a valid point of the correct
+order, is repeated
+until a valid element is found.<a href="#section-appendix.a-3" class="pilcrow">¶</a></p>
+<p id="section-appendix.a-4">The following python snippet generates the above points,
+assuming an elliptic curve implementation following the
+interface of Edwards25519Point.stdbase() and
+Edwards448Point.stdbase() in Appendix A of <span>[<a href="#RFC8032" class="xref">RFC8032</a>]</span>:<a href="#section-appendix.a-4" class="pilcrow">¶</a></p>
+<div class="artwork art-text alignLeft" id="section-appendix.a-5">
+<pre>
+def iterated_hash(seed, n):
+    h = seed
+    for i in range(n):
+        h = hashlib.sha256(h).digest()
+    return h
+
+def bighash(seed, start, sz):
+    n = -(-sz // 32)
+    hashes = [iterated_hash(seed, i) for i in range(start, start + n)]
+    return b''.join(hashes)[:sz]
+
+def canon_pointstr(ecname, s):
+    if ecname == 'edwards25519':
+        return s
+    elif ecname == 'edwards448':
+        return s[:-1] + bytes([s[-1] &amp; 0x80])
+    else:
+        return bytes([(s[0] &amp; 1) | 2]) + s[1:]
+
+def gen_point(seed, ecname, ec):
+    for i in range(1, 1000):
+        hval = bighash(seed, i, len(ec.encode()))
+        pointstr = canon_pointstr(ecname, hval)
+        try:
+            p = ec.decode(pointstr)
+            if p != ec.zero_elem() and p * p.l() == ec.zero_elem():
+                return pointstr, i
+        except Exception:
+            pass
+</pre><a href="#section-appendix.a-5" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="testvectors">
+<section id="section-appendix.b">
+      <h2 id="name-test-vectors">
+<a href="#section-appendix.b" class="section-number selfRef">Appendix B. </a><a href="#name-test-vectors" class="section-name selfRef">Test Vectors</a>
+      </h2>
+<p id="section-appendix.b-1">This section contains test vectors for SPAKE2+ using
+the P256-SHA256-HKDF-HMAC ciphersuite. (Choice of PBKDF is omitted
+and values for w and w0,w1 are provided directly.) All points are
+encoded using the uncompressed format, i.e., with a 0x04 octet
+prefix, specified in <span>[<a href="#SEC1" class="xref">SEC1</a>]</span> A and B identity strings
+are provided in the protocol invocation.<a href="#section-appendix.b-1" class="pilcrow">¶</a></p>
+<div class="artwork art-text alignLeft" id="section-appendix.b-2">
+<pre>
+SPAKE2+(A='client', B='server')
+w0 = 0x4f9e28322a64f9dc7a01b282cc51e2abc4f9ed568805ca84f4ed3ef806516
+cf8
+w1 = 0x8d73e4ca273859c873d809431d15f30e2b722007964e32699160b54fda3ee
+855
+L = 0x0491bb1e6672e71ad80b17d13f7a72ca2fe7f882d4bd734e2d140f67ab49d2
+c3e76dbcf706954bd9ada4e3a7fc50cf9294729f93b130ada3d3a4ae98cc7e7b6971
+X = 0x04879567d09560c02be565429036ed1d2fc3ca53f2eb6fadda4dba09eff3a0
+096f032f0e227207ebebe05e1e95de325dfffe579c8aae76054030e5435fd5298c75
+Y = 0x04b595a25588a2fba757195a756d289c191240296699f61fee8f15a7a741a4
+23d48bd44cf544b409bbe4262a8045051e734567548ba43b3117efd6fb03acf41aff
+Z = 0x047bb4661db7085d019cffa8495aba73d22f87ab8ba22e789477ef933b916f
+412863aeb2dbc8003e4f1c2193290338ea0c7d786d30ca47a48eea273375a0c72ca1
+V = 0x0417658e1e9707a29d429a4733d3bee703574aec222e781a6e7e5f5e504908
+11aabf28e112fee32a37c228df9b53e6220468a2f6f07427604d8917870ac965eec7
+TT = 0x0600000000000000636c69656e74060000000000000073657276657241000
+0000000000004879567d09560c02be565429036ed1d2fc3ca53f2eb6fadda4dba09e
+ff3a0096f032f0e227207ebebe05e1e95de325dfffe579c8aae76054030e5435fd52
+98c75410000000000000004b595a25588a2fba757195a756d289c191240296699f61
+fee8f15a7a741a423d48bd44cf544b409bbe4262a8045051e734567548ba43b3117e
+fd6fb03acf41aff4100000000000000047bb4661db7085d019cffa8495aba73d22f8
+7ab8ba22e789477ef933b916f412863aeb2dbc8003e4f1c2193290338ea0c7d786d3
+0ca47a48eea273375a0c72ca141000000000000000417658e1e9707a29d429a4733d
+3bee703574aec222e781a6e7e5f5e50490811aabf28e112fee32a37c228df9b53e62
+20468a2f6f07427604d8917870ac965eec720000000000000004f9e28322a64f9dc7
+a01b282cc51e2abc4f9ed568805ca84f4ed3ef806516cf8
+Ka = 0xbf800062847c5182bf5c549b05ea6cce
+Ke = 0xce9acf88ff9440777bda3e34fa4993cd
+KcA = 0x73c6a5597096e99b8025172bb45b4a2f
+KcB = 0x96a801673bd07b51d61fbaea03ef17cf
+MAC(A) = 0xcab37c89192f9ad90ca5e6b8eadb130d313b51d24b7889e2536f7c800
+26e076a
+MAC(B) = 0xf7076a78a3d16f0c62cb9e40bd1a91b68dee144b87016e2dae81c36e9
+73f3b2e
+
+SPAKE2+(A='client', B='')
+w0 = 0x4f9e28322a64f9dc7a01b282cc51e2abc4f9ed568805ca84f4ed3ef806516
+cf8
+w1 = 0x8d73e4ca273859c873d809431d15f30e2b722007964e32699160b54fda3ee
+855
+L = 0x0491bb1e6672e71ad80b17d13f7a72ca2fe7f882d4bd734e2d140f67ab49d2
+c3e76dbcf706954bd9ada4e3a7fc50cf9294729f93b130ada3d3a4ae98cc7e7b6971
+X = 0x0426fbedb3b9ccea93d609838dcc1d4baebdbb9c287763ed4cdb2d3cc76f78
+8d3388db3da1f63e945f3f1ba17f7b986ab9ed3170359ee406cbb40f3e3719453b15
+Y = 0x04d4960922990acb87809e734fed2c2ccb72fd26ed173e8207cdc6220073ac
+5017660788e96db275f6edf2ba400d4e090273c24dc907d80ff9cad7f42fd9f79c3f
+Z = 0x0421996ff4d9c05b2389ae05118c519679df5d6de258b31f2a17da7604c8e3
+c17bb3c4aae2ae4217951aa82144cb8b677be8061f28893f70216c1e11ba2bacd50d
+V = 0x04729f7c6c5bd68310345b1a10b84ea7db64c70441da2255992208b7a8e0b3
+9d4f0e634acf7d440b4552a41df291ac6a409f8cf5a47cec9fed5f85fea1241379a4
+TT = 0x0600000000000000636c69656e7441000000000000000426fbedb3b9ccea9
+3d609838dcc1d4baebdbb9c287763ed4cdb2d3cc76f788d3388db3da1f63e945f3f1
+ba17f7b986ab9ed3170359ee406cbb40f3e3719453b15410000000000000004d4960
+922990acb87809e734fed2c2ccb72fd26ed173e8207cdc6220073ac5017660788e96
+db275f6edf2ba400d4e090273c24dc907d80ff9cad7f42fd9f79c3f4100000000000
+0000421996ff4d9c05b2389ae05118c519679df5d6de258b31f2a17da7604c8e3c17
+bb3c4aae2ae4217951aa82144cb8b677be8061f28893f70216c1e11ba2bacd50d410
+000000000000004729f7c6c5bd68310345b1a10b84ea7db64c70441da2255992208b
+7a8e0b39d4f0e634acf7d440b4552a41df291ac6a409f8cf5a47cec9fed5f85fea12
+41379a420000000000000004f9e28322a64f9dc7a01b282cc51e2abc4f9ed568805c
+a84f4ed3ef806516cf8
+Ka = 0xfd19104b836b0ba9dfaaeab88610be57
+Ke = 0x90337374f974f673707de5ba1b98e5b8
+KcA = 0x2e10249c566677c8826b48ad10b19bb5
+KcB = 0x4fcaf8fd0bfcaeeabb9d6f48e264e4a3
+MAC(A) = 0xaaef200ea5f5c41e1fdb9b3455dde715cd8aa96f8afd3274f7159c3c5
+4887f2c
+MAC(B) = 0x926eadbf4b720b46ea622d7100e0013eb24d1591496846a604cf90c14
+46fe0e4
+
+SPAKE2+(A='', B='server')
+w0 = 0x4f9e28322a64f9dc7a01b282cc51e2abc4f9ed568805ca84f4ed3ef806516
+cf8
+w1 = 0x8d73e4ca273859c873d809431d15f30e2b722007964e32699160b54fda3ee
+855
+L = 0x0491bb1e6672e71ad80b17d13f7a72ca2fe7f882d4bd734e2d140f67ab49d2
+c3e76dbcf706954bd9ada4e3a7fc50cf9294729f93b130ada3d3a4ae98cc7e7b6971
+X = 0x0463a7531acd204e7d83ac6562278d7ced01a715eff937a25520bd2220c626
+33db0ea510591c5cd23159a7a97181ec24433aac6e628f16d42c455fcae668411e34
+Y = 0x0433625217e2ccc0c545126f756d999c16df68b14b73b3fe473593c1d3a0d7
+287b43b353177806c641588ec969852b56b17190d6ebe80313de74e5eee0c1403025
+Z = 0x049ef5ea46e8ca42f3e822c598858ca347bf19cc74a8a1fbfd836ec4d77bee
+7f0cd4d42f4f817caa3360c918d2538d7c96de5db47a72949ca2888d02c18ea6f92b
+V = 0x0408a70fc9dca87b70a7d4a074bdcca0222806f0caa0542d8d62aecf535ea8
+ffbc5e48419c5127a0f7f03685013c09d22f797523d26e7db159fecaccebc54ed2a7
+TT = 0x060000000000000073657276657241000000000000000463a7531acd204e7
+d83ac6562278d7ced01a715eff937a25520bd2220c62633db0ea510591c5cd23159a
+7a97181ec24433aac6e628f16d42c455fcae668411e3441000000000000000433625
+217e2ccc0c545126f756d999c16df68b14b73b3fe473593c1d3a0d7287b43b353177
+806c641588ec969852b56b17190d6ebe80313de74e5eee0c14030254100000000000
+000049ef5ea46e8ca42f3e822c598858ca347bf19cc74a8a1fbfd836ec4d77bee7f0
+cd4d42f4f817caa3360c918d2538d7c96de5db47a72949ca2888d02c18ea6f92b410
+00000000000000408a70fc9dca87b70a7d4a074bdcca0222806f0caa0542d8d62aec
+f535ea8ffbc5e48419c5127a0f7f03685013c09d22f797523d26e7db159fecaccebc
+54ed2a720000000000000004f9e28322a64f9dc7a01b282cc51e2abc4f9ed568805c
+a84f4ed3ef806516cf8
+Ka = 0x5c85900898b2079c9de09ebef63cebd1
+Ke = 0x13c812476859e909682c3be7436bfef0
+KcA = 0x77bd636ab9bf153339c5724ee04f87a7
+KcB = 0x194325b27d7c291c94a689ddafeaaa3c
+MAC(A) = 0x3bb61248a1fd2946743314848fc501eb3455eb113bd8966e200de14d5
+e412688
+MAC(B) = 0x3e7912bd2a85a1f56d36fbb16de29834b000d49e50d4c17f992942ee5
+9255f1e
+
+SPAKE2+(A='', B='')
+w0 = 0x4f9e28322a64f9dc7a01b282cc51e2abc4f9ed568805ca84f4ed3ef806516
+cf8
+w1 = 0x8d73e4ca273859c873d809431d15f30e2b722007964e32699160b54fda3ee
+855
+L = 0x0491bb1e6672e71ad80b17d13f7a72ca2fe7f882d4bd734e2d140f67ab49d2
+c3e76dbcf706954bd9ada4e3a7fc50cf9294729f93b130ada3d3a4ae98cc7e7b6971
+X = 0x04f60f506cfa07506d4bfd2b3f56038b1c001fe6826374122c30e914747eab
+647988702cc70210eb2aa625e603d56961af16ec543ee3d4d2cb90d6fe2f3c1d1180
+Y = 0x046898fafef34fff9936217608151af08313305cf8e6f9add10d721c04a018
+607f5b5aca327e150cd5d588de83e46491ec766e2cf87da9fb07dc3745c0630b03bb
+Z = 0x042adeeea1417cc6c592fef772da8ba0f3aea69a5fb15923d0e9ae7c3301c7
+ff87e9ff9fba292ad410e4af71770858e9a314f1deb75f77bde276d3cc8b45ffd70c
+V = 0x04845c130c8c20865828e21ed3400abea726b07fdeb7533fa6017accc37e0b
+e4922241dad44846112e42bee999501fdb4d09fc798e4677d403d10bfa862928584e
+TT = 0x410000000000000004f60f506cfa07506d4bfd2b3f56038b1c001fe682637
+4122c30e914747eab647988702cc70210eb2aa625e603d56961af16ec543ee3d4d2c
+b90d6fe2f3c1d11804100000000000000046898fafef34fff9936217608151af0831
+3305cf8e6f9add10d721c04a018607f5b5aca327e150cd5d588de83e46491ec766e2
+cf87da9fb07dc3745c0630b03bb4100000000000000042adeeea1417cc6c592fef77
+2da8ba0f3aea69a5fb15923d0e9ae7c3301c7ff87e9ff9fba292ad410e4af7177085
+8e9a314f1deb75f77bde276d3cc8b45ffd70c410000000000000004845c130c8c208
+65828e21ed3400abea726b07fdeb7533fa6017accc37e0be4922241dad44846112e4
+2bee999501fdb4d09fc798e4677d403d10bfa862928584e20000000000000004f9e2
+8322a64f9dc7a01b282cc51e2abc4f9ed568805ca84f4ed3ef806516cf8
+Ka = 0x850a18a77b14ef5e71b4a239413630a8
+Ke = 0x4454819282b3e886a7e65b7b0de7cc62
+KcA = 0x05df6196c12d6203768c73d875e2bfc5
+KcB = 0xb58e61c322f685add02c125767e4fbb7
+MAC(A) = 0x33e50d29f8eacc67bfdab4a6c46c88d75ac3308416c64dfbb0d7fb1c0
+feda5b0
+MAC(B) = 0x55434e5e501ad2d476aa1ae334ef27ba437a5dea87683defac575a63b
+548ca64
+</pre><a href="#section-appendix.b-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="section-appendix.c">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Tim Taubert</span></div>
+<div dir="auto" class="left"><span class="org">Apple Inc.</span></div>
+<div dir="auto" class="left"><span class="street-address">One Apple Park Way</span></div>
+<div dir="auto" class="left">
+<span class="locality">Cupertino, California 95014</span>,  </div>
+<div dir="auto" class="left"><span class="country-name">United States of America</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:ttaubert@apple.com" class="email">ttaubert@apple.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Christopher A. Wood</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:caw@heapingbits.net" class="email">caw@heapingbits.net</a>
+</div>
+</address>
+</section>
+</div>
+<script>var toc = document.getElementById("toc");
+var tocToggle = toc.querySelector("h2");
+var tocNav = toc.querySelector("nav");
+
+// mobile menu toggle
+tocToggle.onclick = function(event) {
+    if (window.innerWidth < 1024) {
+ var tocNavDisplay = tocNav.currentStyle ? tocNav.currentStyle.display : getComputedStyle(tocNav, null).display;
+ if (tocNavDisplay == "none") {
+     tocNav.style.display = "block";
+ } else {
+     tocNav.style.display = "none";
+ }
+    }
+}
+
+// toc anchor scroll to anchor
+tocNav.addEventListener("click", function (event) {
+    event.preventDefault();
+    if (event.target.nodeName == 'A') {
+ if (window.innerWidth < 1024) {
+     tocNav.style.display = "none";
+ }
+ var href = event.target.getAttribute("href");
+ var anchorId = href.substr(1);
+ var anchor =  document.getElementById(anchorId);
+ anchor.scrollIntoView(true);
+ window.history.pushState("","",href);
+    }
+});
+
+// switch toc mode when window resized
+window.onresize = function () {
+    if (window.innerWidth < 1024) {
+ tocNav.style.display = "none";
+    } else {
+ tocNav.style.display = "block";
+    }
+}
+</script>
+</body>
+</html>

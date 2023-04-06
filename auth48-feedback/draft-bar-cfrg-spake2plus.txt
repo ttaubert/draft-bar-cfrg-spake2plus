@@ -392,9 +392,8 @@ Table of Contents
 
    Neither K_main nor its derived confirmation keys are used for
    anything except key derivation and confirmation and MUST be discarded
-   after the protocol execution.  Applications MAY derive one or more
-   keys and nonces from K_shared, for use with Authenticated Encryption
-   with Associated Data and subsequent application data encryption.
+   after the protocol execution.  Applications MAY derive additional
+   keys from K_shared as needed.
 
    The length of each confirmation key is dependent on the MAC function
    of the chosen ciphersuite.  For HMAC, the RECOMMENDED key length is
@@ -412,9 +411,10 @@ Table of Contents
    confirmV = MAC(K_confirmV, shareP)
 
    Once key confirmation is complete, applications MAY use K_shared as
-   an authenticated shared secret as needed.  For example, applications
-   MAY derive one or more AEAD keys and nonces from K_shared for
-   subsequent application data encryption.
+   an authenticated shared secret as needed.  For example, aplications
+   MAY derive one or more keys and nonces from K_shared, for use with
+   Authenticated Encryption with Associated Data and subsequent
+   application data encryption.
 
 4.  Ciphersuites
 

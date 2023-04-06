@@ -1524,8 +1524,7 @@ K_shared = KDF(nil, K_main, "SharedKey")
 </div>
 <p id="section-3.4-3">Neither K_main nor its derived confirmation keys are used for anything except key
 derivation and confirmation and MUST be discarded after the protocol execution.
-Applications MAY derive one or more keys and nonces from K_shared, for use with
-Authenticated Encryption with Associated Data and subsequent application data encryption.<a href="#section-3.4-3" class="pilcrow">¶</a></p>
+Applications MAY derive additional keys from K_shared as needed.<a href="#section-3.4-3" class="pilcrow">¶</a></p>
 <p id="section-3.4-4">The length of each confirmation key is dependent on the MAC function of the chosen
 ciphersuite. For HMAC, the RECOMMENDED key length is equal to the output length of
 the digest output, e.g., 256 bits for Hash() = SHA-256. For CMAC-AES, each
@@ -1541,8 +1540,9 @@ confirmV = MAC(K_confirmV, shareP)
 </pre><a href="#section-3.4-6" class="pilcrow">¶</a>
 </div>
 <p id="section-3.4-7">Once key confirmation is complete, applications MAY use K_shared as an authenticated
-shared secret as needed. For example, applications MAY derive one or more AEAD
-keys and nonces from K_shared for subsequent application data encryption.<a href="#section-3.4-7" class="pilcrow">¶</a></p>
+shared secret as needed. For example, aplications MAY derive one or more keys and nonces
+from K_shared, for use with Authenticated Encryption with Associated Data and subsequent
+application data encryption.<a href="#section-3.4-7" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>

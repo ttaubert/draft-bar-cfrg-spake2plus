@@ -411,7 +411,7 @@ Table of Contents
    confirmV = MAC(K_confirmV, shareP)
 
    Once key confirmation is complete, applications MAY use K_shared as
-   an authenticated shared secret as needed.  For example, aplications
+   an authenticated shared secret as needed.  For example, applications
    MAY derive one or more keys and nonces from K_shared, for use with
    Authenticated Encryption with Associated Data and subsequent
    application data encryption.

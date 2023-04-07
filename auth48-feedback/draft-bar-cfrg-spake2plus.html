@@ -1058,7 +1058,7 @@ svg :is([fill="white"], [fill^="#fff"]) {
 </tr></thead>
 <tfoot><tr>
 <td class="left">Taubert &amp; Wood</td>
-<td class="center">Expires 8 October 2023</td>
+<td class="center">Expires 9 October 2023</td>
 <td class="right">[Page]</td>
 </tr></tfoot>
 </table>
@@ -1071,12 +1071,12 @@ svg :is([fill="white"], [fill^="#fff"]) {
 <dd class="internet-draft">draft-bar-cfrg-spake2plus-latest</dd>
 <dt class="label-published">Published:</dt>
 <dd class="published">
-<time datetime="2023-04-06" class="published">6 April 2023</time>
+<time datetime="2023-04-07" class="published">7 April 2023</time>
     </dd>
 <dt class="label-intended-status">Intended Status:</dt>
 <dd class="intended-status">Informational</dd>
 <dt class="label-expires">Expires:</dt>
-<dd class="expires"><time datetime="2023-10-08">8 October 2023</time></dd>
+<dd class="expires"><time datetime="2023-10-09">9 October 2023</time></dd>
 <dt class="label-authors">Authors:</dt>
 <dd class="authors">
 <div class="author">
@@ -1127,7 +1127,7 @@ of SPAKE2+ by the IETF or IRTF.<a href="#section-abstract-2" class="pilcrow">¶<
         time. It is inappropriate to use Internet-Drafts as reference
         material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.1-4">
-        This Internet-Draft will expire on 8 October 2023.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+        This Internet-Draft will expire on 9 October 2023.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="copyright">
@@ -1254,8 +1254,8 @@ The record cannot be used directly to successfully run the protocol as a prover,
 making this protocol more robust than balanced PAKEs, which don't benefit from Password Hashing Functions to the same extent.<a href="#section-1-2" class="pilcrow">¶</a></p>
 <p id="section-1-3">This augmented property is especially valuable in scenarios where the execution of the protocol is constrained
 and the adversary cannot query the salt of the Password Hashing Function ahead of the attack.
-A constraint may, for example, be physical proximity through a local network or when initiation of the protocol
-requires a first authentication factor.<a href="#section-1-3" class="pilcrow">¶</a></p>
+For example, a constraint may be when physical proximity through a local area network is required or when a
+first authentication factor is required for initiation of the protocol.<a href="#section-1-3" class="pilcrow">¶</a></p>
 <p id="section-1-4">This document has content split out from a related document specifying SPAKE2 <span>[<a href="#I-D.irtf-cfrg-spake2" class="cite xref">I-D.irtf-cfrg-spake2</a>]</span>,
 which is a symmetric PAKE protocol, where both parties have knowledge of the password.
 SPAKE2+ is the asymmetric or augmented version of SPAKE2, wherein only one party has knowledge of the password.
@@ -1557,7 +1557,7 @@ indicates a group, cryptographic hash algorithm, and pair of KDF and MAC functio
 P256-SHA256-HKDF-HMAC-SHA256. This ciphersuite indicates a SPAKE2+ protocol instance over
 P-256 that uses SHA256 along with HKDF <span>[<a href="#RFC5869" class="cite xref">RFC5869</a>]</span> and HMAC <span>[<a href="#RFC2104" class="cite xref">RFC2104</a>]</span>
 for G, Hash, KDF, and MAC functions, respectively. Since the choice of PBKDF,
-its parameters for computing w0 and w1, and distribution of w0 and w1 does not
+its parameters for computing w0 and w1, and the distribution of w0 and w1 do not
 affect interoperability, the PBKDF is not included as part of the ciphersuite.<a href="#section-4-1" class="pilcrow">¶</a></p>
 <p id="section-4-2">If no MAC algorithm is used in the key confirmation phase, its respective column
 in Table 1 can be ignored and the ciphersuite name will contain no MAC

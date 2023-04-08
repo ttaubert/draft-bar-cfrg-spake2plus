@@ -5,7 +5,7 @@
 Network Working Group                                         T. Taubert
 Internet-Draft                                                Apple Inc.
 Intended status: Informational                                C. A. Wood
-Expires: 9 October 2023                                     7 April 2023
+Expires: 10 October 2023                                    8 April 2023
 
 
     SPAKE2+, an Augmented Password-Authenticated Key Exchange (PAKE)
@@ -48,7 +48,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 9 October 2023.
+   This Internet-Draft will expire on 10 October 2023.
 
 Copyright Notice
 
@@ -119,8 +119,8 @@ Table of Contents
    execution of the protocol is constrained and the adversary cannot
    query the salt of the Password Hashing Function ahead of the attack.
    For example, a constraint may be when physical proximity through a
-   local area network is required or when a first authentication factor
-   is required for initiation of the protocol.
+   local network is required or when a first authentication factor is
+   required for initiation of the protocol.
 
    This document has content split out from a related document
    specifying SPAKE2 [I-D.irtf-cfrg-spake2], which is a symmetric PAKE
